@@ -2,7 +2,6 @@
 package {{package}};
 
 import com.sun.jersey.api.client.GenericType;
-import com.google.gson.reflect.TypeToken;
 
 import {{invokerPackage}}.ApiException;
 import {{invokerPackage}}.ApiClient;
@@ -13,7 +12,6 @@ import {{invokerPackage}}.Pair;
 {{#imports}}import {{import}};
 {{/imports}}
 
-import java.io.InputStream;
 
 {{^fullJavaUtil}}
 import java.util.ArrayList;
@@ -108,62 +106,31 @@ public class {{classname}} {
     String[] {{localVariablePrefix}}localVarAuthNames = new String[] { {{#authMethods}}"{{name}}"{{#hasMore}}, {{/hasMore}}{{/authMethods}} };
 
     {{#returnType}}
-    GenericType<{{returnType}}> {{localVariablePrefix}}localVarReturnType = new GenericType<{{returnType}}>() {};
-    return {{localVariablePrefix}}apiClient.invokeAPI({{localVariablePrefix}}localVarPath, "{{httpMethod}}", {{localVariablePrefix}}localVarQueryParams, {{localVariablePrefix}}localVarCollectionQueryParams, {{localVariablePrefix}}localVarPostBody, {{localVariablePrefix}}localVarHeaderParams, {{localVariablePrefix}}localVarFormParams, {{localVariablePrefix}}localVarAccept, {{localVariablePrefix}}localVarContentType, {{localVariablePrefix}}localVarAuthNames, {{localVariablePrefix}}localVarReturnType, null);
+    GenericType<{{{returnType}}}> {{localVariablePrefix}}localVarReturnType = new GenericType<{{{returnType}}}>() {};
+    return {{localVariablePrefix}}apiClient.invokeAPI({{localVariablePrefix}}localVarPath, "{{httpMethod}}", {{localVariablePrefix}}localVarQueryParams, {{localVariablePrefix}}localVarCollectionQueryParams, {{localVariablePrefix}}localVarPostBody, {{localVariablePrefix}}localVarHeaderParams, {{localVariablePrefix}}localVarFormParams, {{localVariablePrefix}}localVarAccept, {{localVariablePrefix}}localVarContentType, {{localVariablePrefix}}localVarAuthNames, {{localVariablePrefix}}localVarReturnType);
     {{/returnType}}{{^returnType}}
-    {{localVariablePrefix}}apiClient.invokeAPI({{localVariablePrefix}}localVarPath, "{{httpMethod}}", {{localVariablePrefix}}localVarQueryParams, {{localVariablePrefix}}localVarCollectionQueryParams, {{localVariablePrefix}}localVarPostBody, {{localVariablePrefix}}localVarHeaderParams, {{localVariablePrefix}}localVarFormParams, {{localVariablePrefix}}localVarAccept, {{localVariablePrefix}}localVarContentType, {{localVariablePrefix}}localVarAuthNames, null, null);
+    {{localVariablePrefix}}apiClient.invokeAPI({{localVariablePrefix}}localVarPath, "{{httpMethod}}", {{localVariablePrefix}}localVarQueryParams, {{localVariablePrefix}}localVarCollectionQueryParams, {{localVariablePrefix}}localVarPostBody, {{localVariablePrefix}}localVarHeaderParams, {{localVariablePrefix}}localVarFormParams, {{localVariablePrefix}}localVarAccept, {{localVariablePrefix}}localVarContentType, {{localVariablePrefix}}localVarAuthNames, null);
     {{/returnType}}
   }
 
-  {{#allParams}}
-  {{#isFile}}
+  {{#hasFileParameter}}
+  /**
+   * Overload for file parameter as File.
+   */
+  public {{returnType}} {{operationId}}({{#allParams}}{{#isFile}}File {{paramName}}{{/isFile}}{{/allParams}}{{#hasMore}}, {{/hasMore}}{{#allParams}}{{^isFile}}{{paramType}} {{paramName}}{{/isFile}}{{/allParams}}) throws ApiException {
+      return {{operationId}}({{#allParams}}{{#isFile}}{{paramName}} != null ? new FileInputStream({{paramName}}) : null{{/isFile}}{{/allParams}}{{#hasMore}}, {{/hasMore}}{{#allParams}}{{^isFile}}{{paramName}}{{/isFile}}{{/allParams}});
+  }
+
   /**
    * Overload for file parameter as InputStream.
    */
-  public {{#returnType}}{{{returnType}}} {{/returnType}}{{^returnType}}void {{/returnType}}{{operationId}}(InputStream {{paramName}}) throws ApiException {
-      Object {{localVariablePrefix}}localVarPostBody = null;
-      Map<String, Object> {{localVariablePrefix}}localVarFormParams = new HashMap<>();
-      {{localVariablePrefix}}localVarFormParams.put("{{paramName}}", {{paramName}});
-
-      // Create path and map variables
-      String {{localVariablePrefix}}localVarPath = "{{{path}}}";
-
-      // Call the API and return the result
-      {{#returnType}}
-      Type {{localVariablePrefix}}localVarReturnType = new TypeToken<ApiResponse<{{returnType}}>>() {}.getType();
-      ApiResponse<{{returnType}}> response = apiClient.execute(
-          apiClient.buildCall(
-              {{localVariablePrefix}}localVarPath,
-              "{{httpMethod}}",
-              new ArrayList<Pair>(), // Explicitly specify List<Pair>
-              new ArrayList<Pair>(), // Explicitly specify List<Pair>
-              {{localVariablePrefix}}localVarPostBody,
-              new HashMap<String, String>(), // Explicitly specify Map<String, String>
-              {{localVariablePrefix}}localVarFormParams,
-              new String[] { "Apikey" },
-              null // Add ProgressRequestListener as null
-          ),
-          {{localVariablePrefix}}localVarReturnType
-      );
-      return response.getData();
-      {{/returnType}}{{^returnType}}
-      apiClient.execute(
-          apiClient.buildCall(
-              {{localVariablePrefix}}localVarPath,
-              "{{httpMethod}}",
-              new ArrayList<Pair>(), // Explicitly specify List<Pair>
-              new ArrayList<Pair>(), // Explicitly specify List<Pair>
-              {{localVariablePrefix}}localVarPostBody,
-              new HashMap<String, String>(), // Explicitly specify Map<String, String>
-              {{localVariablePrefix}}localVarFormParams,
-              new String[] { "Apikey" },
-              null // Add ProgressRequestListener as null
-          )
-      );
-      {{/returnType}}
+  public {{returnType}} {{operationId}}({{#allParams}}{{#isFile}}InputStream {{paramName}}{{/isFile}}{{/allParams}}{{#hasMore}}, {{/hasMore}}{{#allParams}}{{^isFile}}{{paramType}} {{paramName}}{{/isFile}}{{/allParams}}) throws ApiException {
+      Object {{localVariablePrefix}}localVarPostBody = {{#bodyParam}}{{paramName}}{{/bodyParam}}{{^bodyParam}}null{{/bodyParam}};
+      // ...existing code for handling InputStream...
+      {{localVariablePrefix}}localVarFormParams.put("{{baseName}}", {{paramName}});
+      // ...existing code...
   }
-  {{/isFile}}
-  {{/allParams}}
+  {{/hasFileParameter}}
   {{/operation}}
 }
 {{/operations}}
