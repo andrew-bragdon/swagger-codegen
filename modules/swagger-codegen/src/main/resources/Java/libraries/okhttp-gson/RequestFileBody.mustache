@@ -1,0 +1,50 @@
+{{>licenseInfo}}
+
+package {{invokerPackage}};
+
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.RequestBody;
+import okio.BufferedSink;
+
+import java.io.IOException;
+
+/**
+ * A request body for files in form data.
+ */
+public class RequestFileBody extends RequestBody {
+    private final byte[] content;
+    private final String filename;
+    private final MediaType contentType;
+
+    /**
+     * Create a RequestFileBody with the given content, filename, and content type.
+     * 
+     * @param content The file content as a byte array
+     * @param filename The name of the file
+     * @param contentTypeString The content type of the file
+     */
+    public RequestFileBody(byte[] content, String filename, String contentTypeString) {
+        this.content = content;
+        this.filename = filename;
+        this.contentType = MediaType.parse(contentTypeString);
+    }
+
+    @Override
+    public MediaType contentType() {
+        return contentType;
+    }
+
+    @Override
+    public void writeTo(BufferedSink sink) throws IOException {
+        sink.write(content);
+    }
+
+    /**
+     * Get the filename of this file.
+     *
+     * @return The filename
+     */
+    public String getFilename() {
+        return filename;
+    }
+}

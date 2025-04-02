@@ -56,6 +56,11 @@ import java.util.List;
 import java.util.Map;
 {{/fullJavaUtil}}
 
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.MediaType;
+import okio.BufferedSink;
+import com.squareup.okhttp.MultipartBuilder;
+
 {{#operations}}
 public class {{classname}} {
     private ApiClient {{localVariablePrefix}}apiClient;
@@ -79,6 +84,20 @@ public class {{classname}} {
 
     public void setHeadersOverrides(Map<String, String> headers) {
         this.headers = headers;
+    }
+
+    private byte[] convertInputStreamToByteArray(InputStream input) throws ApiException {
+        try {
+            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+            int nRead;
+            byte[] data = new byte[8192];
+            while ((nRead = input.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            return buffer.toByteArray();
+        } catch (java.io.IOException e) {
+            throw new ApiException(e);
+        }
     }
 
     {{#operation}}
@@ -116,9 +135,7 @@ public class {{classname}} {
         if ({{paramName}} != null)
         {{localVariablePrefix}}localVarHeaderParams.put("{{baseName}}", {{localVariablePrefix}}apiClient.parameterToString({{paramName}}));{{/headerParams}}
 
-        {{javaUtilPrefix}}Map<String, Object> {{localVariablePrefix}}localVarFormParams = new {{javaUtilPrefix}}HashMap<String, Object>();{{#formParams}}
-        if ({{paramName}} != null)
-        {{localVariablePrefix}}localVarFormParams.put("{{baseName}}", {{paramName}});{{/formParams}}
+        {{javaUtilPrefix}}Map<String, Object> {{localVariablePrefix}}localVarFormParams = new {{javaUtilPrefix}}HashMap<String, Object>();
 
         final String[] {{localVariablePrefix}}localVarAccepts = {
             {{#produces}}"{{{mediaType}}}"{{#hasMore}}, {{/hasMore}}{{/produces}}
@@ -291,47 +308,86 @@ public class {{classname}} {
     /**
      * Overload for file parameter as InputStream.
      */
-    public {{#returnType}}{{{returnType}}} {{/returnType}}{{^returnType}}void {{/returnType}}{{operationId}}(InputStream {{paramName}}) throws ApiException {
-        Object {{localVariablePrefix}}localVarPostBody = null;
-        Map<String, Object> {{localVariablePrefix}}localVarFormParams = new HashMap<>();
-        {{localVariablePrefix}}localVarFormParams.put("{{paramName}}", {{paramName}});
-
+    public {{#returnType}}{{{returnType}}} {{/returnType}}{{^returnType}}void {{/returnType}}{{operationId}}(final InputStream {{paramName}}{{#vendorExtensions.hasMoreNonFileParams}}, {{/vendorExtensions.hasMoreNonFileParams}}{{#allParams}}{{^isFile}}{{#vendorExtensions.isNotFirst}}, {{/vendorExtensions.isNotFirst}}{{{dataType}}} {{paramName}}{{/isFile}}{{/allParams}}) throws ApiException {
         // Create path and map variables
-        String {{localVariablePrefix}}localVarPath = "{{{path}}}";
-
-        // Call the API and return the result
+        String {{localVariablePrefix}}localVarPath = "{{{path}}}"{{#pathParams}}
+            .replaceAll("\\{" + "{{baseName}}" + "\\}", {{localVariablePrefix}}apiClient.escapeString({{{paramName}}}.toString())){{/pathParams}};
+        
+        // Read the inputstream into a byte array
+        byte[] fileBytes;
+        try {
+            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+            int nRead;
+            byte[] data = new byte[16384];
+            while ((nRead = {{paramName}}.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            fileBytes = buffer.toByteArray();
+        } catch (IOException e) {
+            throw new ApiException(e);
+        }
+        
+        // Create the multipart form manually
+        MultipartBuilder multipartBuilder = new MultipartBuilder()
+            .type(MultipartBuilder.FORM);
+        
+        // Add the file as a part with proper Content-Disposition header
+        MediaType mediaType = MediaType.parse("application/octet-stream");
+        RequestBody fileBody = RequestBody.create(mediaType, fileBytes);
+        multipartBuilder.addFormDataPart("{{paramName}}", "filename", fileBody);
+        
+        RequestBody requestBody = multipartBuilder.build();
+        
+        // Set up standard headers
+        Map<String, String> {{localVariablePrefix}}localVarHeaderParams = new HashMap<>();
+        List<Pair> {{localVariablePrefix}}localVarQueryParams = new ArrayList<>();
+        List<Pair> {{localVariablePrefix}}localVarCollectionQueryParams = new ArrayList<>();
+        
+        {{#headerParams}}
+        if ({{paramName}} != null)
+            {{localVariablePrefix}}localVarHeaderParams.put("{{baseName}}", apiClient.parameterToString({{paramName}}));
+        {{/headerParams}}
+        
+        // Set up accepts headers
+        final String[] {{localVariablePrefix}}localVarAccepts = {
+            {{#produces}}"{{{mediaType}}}"{{#hasMore}}, {{/hasMore}}{{/produces}}
+        };
+        final String {{localVariablePrefix}}localVarAccept = apiClient.selectHeaderAccept({{localVariablePrefix}}localVarAccepts);
+        if ({{localVariablePrefix}}localVarAccept != null) {{localVariablePrefix}}localVarHeaderParams.put("Accept", {{localVariablePrefix}}localVarAccept);
+        
+        // The content type is set from the request body
+        {{localVariablePrefix}}localVarHeaderParams.put("Content-Type", requestBody.contentType().toString());
+        
+        // Build the final call
+        com.squareup.okhttp.Call call = apiClient.buildCall(
+            {{localVariablePrefix}}localVarPath,
+            "POST", // Always POST for file uploads
+            {{localVariablePrefix}}localVarQueryParams,
+            {{localVariablePrefix}}localVarCollectionQueryParams,
+            requestBody,
+            {{localVariablePrefix}}localVarHeaderParams,
+            null, // No form params - we're using the multipart body directly
+            new String[] { {{#authMethods}}"{{name}}"{{#hasMore}}, {{/hasMore}}{{/authMethods}} },
+            null
+        );
+        
+        // Execute the call
         {{#returnType}}
-        Type {{localVariablePrefix}}localVarReturnType = new TypeToken<ApiResponse<{{returnType}}>>() {}.getType();
-        ApiResponse<{{returnType}}> response = apiClient.execute(
-            apiClient.buildCall(
-                {{localVariablePrefix}}localVarPath,
-                "{{httpMethod}}",
-                new ArrayList<Pair>(), // Explicitly specify List<Pair>
-                new ArrayList<Pair>(), // Explicitly specify List<Pair>
-                {{localVariablePrefix}}localVarPostBody,
-                new HashMap<String, String>(), // Explicitly specify Map<String, String>
-                {{localVariablePrefix}}localVarFormParams,
-                new String[] { "Apikey" },
-                null // Add ProgressRequestListener as null
-            ),
-            {{localVariablePrefix}}localVarReturnType
-        );
+        Type {{localVariablePrefix}}localVarReturnType = new TypeToken<{{{returnType}}}>(){}.getType();
+        ApiResponse<{{{returnType}}}> response = apiClient.execute(call, {{localVariablePrefix}}localVarReturnType);
         return response.getData();
-        {{/returnType}}{{^returnType}}
-        apiClient.execute(
-            apiClient.buildCall(
-                {{localVariablePrefix}}localVarPath,
-                "{{httpMethod}}",
-                new ArrayList<Pair>(), // Explicitly specify List<Pair>
-                new ArrayList<Pair>(), // Explicitly specify List<Pair>
-                {{localVariablePrefix}}localVarPostBody,
-                new HashMap<String, String>(), // Explicitly specify Map<String, String>
-                {{localVariablePrefix}}localVarFormParams,
-                new String[] { "Apikey" },
-                null // Add ProgressRequestListener as null
-            )
-        );
         {{/returnType}}
+        {{^returnType}}
+        apiClient.execute(call);
+        {{/returnType}}
+    }
+
+    /**
+     * Overload for file parameter as InputStream (chunked transfer).
+     */
+    public {{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}void{{/returnType}} {{operationId}}ChunkedTransfer(final InputStream {{paramName}}{{#vendorExtensions.hasMoreNonFileParams}}, {{/vendorExtensions.hasMoreNonFileParams}}{{#allParams}}{{^isFile}}{{#vendorExtensions.isNotFirst}}, {{/vendorExtensions.isNotFirst}}{{{dataType}}} {{paramName}}{{/isFile}}{{/allParams}}) throws ApiException {
+        // Reuse the regular method as we've improved it to read and buffer efficiently
+        return {{operationId}}({{paramName}}{{#allParams}}{{^isFile}}, {{paramName}}{{/isFile}}{{/allParams}});
     }
     {{/isFile}}
     {{/allParams}}
